@@ -544,7 +544,7 @@ function makeTextBlocksXml() {
 
 async function exportToWord() {
   try {
-    if (typeof JSZip === 'undefined') { alert('JSZip library not loaded. Check your internet connection.'); return; }
+    if (typeof JSZip === 'undefined') { alert('JSZip library not loaded.'); return; }
     if (typeof saveAs === 'undefined') { alert('FileSaver.js not loaded.'); return; }
     if (!templateData) {
       await loadTemplate();
@@ -558,59 +558,62 @@ async function exportToWord() {
     const dl = S.lang==='de' ? 'de-DE' : S.lang==='en' ? 'en-GB' : 'nl-NL';
     const ds = new Date(pd).toLocaleDateString(dl, {day:'numeric', month:'long', year:'numeric'});
 
-    // Build the scope summary for cover page
+    // Build scope summary for cover page
     const selBlocks = TB.filter(b => S.sel.has(b.id));
     const scopeItems = [...new Set(selBlocks.map(b => CL[S.lang]?.[b.cat] || b.cat))];
     const scopeSummary = pn + (scopeItems.length ? ' — ' + scopeItems.map(s => s.replace(/^.+?\s/,'')).join(', ') : '');
 
-    // Unzip template
-    const zip = await JSZip.loadAsync(templateData);
+    // Load template as JSZip — use arraybuffer copy
+    const zip = new JSZip();
+    await zip.loadAsync(templateData.slice(0));
 
-    // Process document.xml
-    let docXml = await zip.file('word/document.xml').async('string');
+    // Read document.xml as text
+    const docFile = zip.file('word/document.xml');
+    if (!docFile) { alert('Template is missing word/document.xml'); return; }
+    let docXml = await docFile.async('text');
 
     // Generate text blocks XML
     const tbXml = makeTextBlocksXml();
 
-    // Replace the {{Text Blocks}} paragraph with generated content
-    // Find the full <w:p> element containing {{Text Blocks}}
-    docXml = docXml.replace(
-      /<w:p[^>]*>(?:(?!<\/w:p>).)*\{\{Text Blocks\}\}(?:(?!<\/w:p>).)*<\/w:p>/s,
-      tbXml
-    );
+    // Replace {{Text Blocks}} paragraph
+    const tbPattern = /<w:p[^>]*>(?:(?!<\/w:p>).)*?\{\{Text Blocks\}\}(?:(?!<\/w:p>).)*?<\/w:p>/;
+    if (tbPattern.test(docXml)) {
+      docXml = docXml.replace(tbPattern, tbXml);
+    }
 
     // Simple placeholder replacements
-    const replacements = {
-      '{{Project name+ RFQ + Scope of the supplier}}': escXml(scopeSummary),
-      '{{Offertenummer}}': escXml(pr),
-      '{{General information of the Project}}': escXml(t('dS') + '\n' + t('dI')),
-      '{{the scope}}': '',
-      '{{general expectation}}': escXml(t('dC')),
-      '{{Genral paying options of STM}}': escXml(t('dG') + '\nSTM Group'),
-      '{{Standards that shouldmee}}': '',
-    };
-
-    for (const [placeholder, value] of Object.entries(replacements)) {
-      // Replace all occurrences
-      while (docXml.includes(placeholder)) {
-        docXml = docXml.replace(placeholder, value);
+    const reps = [
+      ['{{Project name+ RFQ + Scope of the supplier}}', escXml(scopeSummary)],
+      ['{{Offertenummer}}', escXml(pr)],
+      ['{{General information of the Project}}', escXml(t('dS'))],
+      ['{{the scope}}', escXml(t('dI'))],
+      ['{{general expectation}}', escXml(t('dC'))],
+      ['{{Genral paying options of STM}}', escXml(t('dG'))],
+      ['{{Standards that shouldmee}}', ''],
+    ];
+    for (const [ph, val] of reps) {
+      while (docXml.indexOf(ph) !== -1) {
+        docXml = docXml.replace(ph, val);
       }
     }
 
+    // Write back as text
     zip.file('word/document.xml', docXml);
 
-    // Process header1.xml
-    let hdrXml = await zip.file('word/header1.xml').async('string');
-    hdrXml = hdrXml.replace(/\{\{Requestnummer\}\}/g, escXml(pr));
-    // Also replace date placeholder if present
-    zip.file('word/header1.xml', hdrXml);
+    // Process header
+    const hdrFile = zip.file('word/header1.xml');
+    if (hdrFile) {
+      let hdrXml = await hdrFile.async('text');
+      while (hdrXml.indexOf('{{Requestnummer}}') !== -1) {
+        hdrXml = hdrXml.replace('{{Requestnummer}}', escXml(pr));
+      }
+      zip.file('word/header1.xml', hdrXml);
+    }
 
-    // Generate final docx
+    // Generate final docx — use STORE (no compression) to avoid corruption
     const blob = await zip.generateAsync({
       type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     });
 
     const filename = 'RFQ_' + (pr || 'DRAFT') + '_' + (pn || 'project').replace(/\s+/g, '_') + '_' + S.lang.toUpperCase() + '.docx';
