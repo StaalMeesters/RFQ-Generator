@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STM Group — RFQ Configurator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+:root{--o:#F94816;--oh:#EE4F1E;--ol:#F6BD9A;--obg:rgba(249,72,22,.06);--dk:#22293B;--dk2:#314056;--gr:#CBCFD5;--lt:#EEEEEF;--wh:#FAFAFA;--bd:#3a3f4b;--r:10px;--ss:0 1px 3px rgba(34,41,59,.06);--tr:all .2s cubic-bezier(.4,0,.2,1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--lt);color:var(--bd);min-height:100vh;overflow-x:hidden}
+
+.app-header{background:var(--dk);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo-area{display:flex;align-items:center;gap:16px}
+.logo-mark{display:grid;grid-template-columns:repeat(3,8px);grid-template-rows:repeat(3,8px);gap:3px}
+.logo-mark span{width:8px;height:8px;background:var(--o);border-radius:1px}
+.logo-text{color:#fff;font-weight:700;font-size:18px;letter-spacing:1px}
+.logo-text small{color:var(--gr);font-weight:400;font-size:12px;display:block;letter-spacing:.5px;margin-top:-2px}
+.header-actions{display:flex;align-items:center;gap:12px}
+
+/* LANG SWITCHER */
+.lang-sw{display:flex;background:rgba(255,255,255,.06);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-right:8px}
+.lang-btn{padding:7px 14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;background:0 0;color:rgba(255,255,255,.5);transition:var(--tr);display:flex;align-items:center;gap:6px}
+.lang-btn:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.04)}
+.lang-btn.active{color:#fff;background:var(--o)}
+.lang-flag{font-size:15px;line-height:1}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:var(--tr)}
+.btn-p{background:var(--o);color:#fff}.btn-p:hover{background:var(--oh);transform:translateY(-1px);box-shadow:0 4px 12px rgba(249,72,22,.3)}
+.btn-s{background:var(--dk2);color:#fff;border:1px solid rgba(255,255,255,.1)}.btn-s:hover{background:#3d4d66}
+
+.app-body{display:grid;grid-template-columns:340px 1fr 420px;min-height:calc(100vh - 64px)}
+
+.sidebar-left{background:#fff;border-right:1px solid #e4e5e7;overflow-y:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}
+.sidebar-section{padding:20px;border-bottom:1px solid #e4e5e7}
+.sidebar-section h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dk2);margin-bottom:14px}
+.pf{margin-bottom:12px}.pf label{display:block;font-size:12px;font-weight:500;color:#666;margin-bottom:4px}
+.pf input,.pf select{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-family:'Outfit',sans-serif;font-size:14px;transition:var(--tr);background:var(--wh)}
+.pf input:focus,.pf select:focus{outline:none;border-color:var(--o);box-shadow:0 0 0 3px rgba(249,72,22,.1)}
+
+.block-category{padding:6px 20px 2px}
+.block-category-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--o);margin:12px 0 8px}
+.bc{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin:0 12px 4px;border-radius:8px;cursor:pointer;transition:var(--tr);border:1px solid transparent}
+.bc:hover{background:var(--obg)}.bc.sel{background:var(--obg);border-color:var(--o)}
+.bt{width:18px;height:18px;border:2px solid #ccc;border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:var(--tr)}
+.bc.sel .bt{background:var(--o);border-color:var(--o)}.bc.sel .bt::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.bi h4{font-size:13px;font-weight:600;color:var(--dk);line-height:1.3}.bi p{font-size:11px;color:#888;margin-top:2px}
+.bb{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-radius:4px;background:var(--lt);color:#777;white-space:nowrap;margin-top:3px;flex-shrink:0}
+.bc.mand .bb{background:var(--o);color:#fff}
+
+.main-content{padding:28px 32px;overflow-y:auto;max-height:calc(100vh - 64px)}
+.main-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center;color:#999}
+.main-empty .ei{font-size:48px;margin-bottom:16px;opacity:.4}
+.main-empty h2{font-size:20px;color:#666;margin-bottom:8px}
+.main-empty p{font-size:14px;max-width:320px}
+.vs{background:#fff;border-radius:var(--r);padding:24px;margin-bottom:16px;box-shadow:var(--ss);border:1px solid #e8e9eb;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.vsh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--o)}
+.vsh h3{font-size:16px;font-weight:700;color:var(--dk)}
+.sb{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:#e8f5e9;color:#2e7d32}.sb.v{background:#fff3e0;color:#e65100}
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.vf label{display:block;font-size:12px;font-weight:500;color:#666;margin-bottom:4px}.vf label .u{color:var(--o);font-weight:600}
+.vf input,.vf select{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-family:'Outfit',sans-serif;font-size:14px;transition:var(--tr)}
+.vf input:focus,.vf select:focus{outline:none;border-color:var(--o);box-shadow:0 0 0 3px rgba(249,72,22,.1)}
+.vf input::placeholder{color:#bbb}
+
+.sidebar-right{background:var(--dk);color:#ddd;overflow-y:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}
+.ph{padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}
+.ph h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--o)}
+.pc{font-size:12px;color:#888}
+.pb{padding:20px 24px}
+.pbl{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);animation:fi .3s ease}.pbl:last-child{border-bottom:none}
+.pbt{font-size:12px;font-weight:700;color:var(--o);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.ptx{font-size:13px;line-height:1.7;color:#c8ccd4;white-space:pre-wrap}
+.ptx .vh{color:var(--ol);font-weight:600;background:rgba(249,72,22,.1);padding:1px 4px;border-radius:3px}
+.ptx .ve{color:#f94816;background:rgba(249,72,22,.15);padding:1px 6px;border-radius:3px;font-style:italic;font-size:12px}
+
+.status-bar{background:var(--dk);border-top:1px solid rgba(255,255,255,.08);padding:8px 32px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#888;position:fixed;bottom:0;left:0;right:0;z-index:100;height:36px}
+.status-bar .sl{display:flex;gap:20px}
+.sd{width:6px;height:6px;border-radius:50%;background:#4caf50;display:inline-block;margin-right:6px}
+@media(max-width:1200px){.app-body{grid-template-columns:300px 1fr}.sidebar-right{display:none}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}.sidebar-right::-webkit-scrollbar-thumb{background:#444}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-area">
+    <div class="logo-mark"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="logo-text">STM GROUP <small id="ui-sub"></small></div>
+  </div>
+  <div class="header-actions">
+    <div class="lang-sw" id="lang-sw">
+      <button class="lang-btn active" data-lang="nl" onclick="setLang('nl')"><span class="lang-flag">🇳🇱</span> NL</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')"><span class="lang-flag">🇬🇧</span> EN</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')"><span class="lang-flag">🇩🇪</span> DE</button>
+    </div>
+    <button class="btn btn-s" onclick="resetAll()" id="btn-r"></button>
+    <button class="btn btn-p" onclick="exportToWord()" id="btn-e"></button>
+  </div>
+</header>
+
+<div class="app-body">
+  <aside class="sidebar-left">
+    <div class="sidebar-section">
+      <h3 id="ui-pt"></h3>
+      <div class="pf"><label id="lbl-pn"></label><input type="text" id="proj-name" oninput="upd()"></div>
+      <div class="pf"><label id="lbl-pr"></label><input type="text" id="proj-ref" placeholder="STP25001" oninput="upd()"></div>
+      <div class="pf"><label id="lbl-pd"></label><input type="date" id="proj-date" oninput="upd()"></div>
+      <div class="pf"><label id="lbl-ps"></label><input type="text" id="proj-supplier" oninput="upd()"></div>
+      <div class="pf"><label id="lbl-fw"></label>
+        <select id="proj-fw" onchange="upd()"><option value="supply_install" id="o-si"></option><option value="install_only" id="o-io"></option></select>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3 id="ui-st"></h3>
+      <p style="font-size:12px;color:#999;margin-bottom:12px" id="ui-sh"></p>
+    </div>
+    <div id="bl"></div>
+  </aside>
+
+  <main class="main-content">
+    <div class="main-empty" id="es">
+      <div class="ei">📋</div>
+      <h2 id="ui-et"></h2>
+      <p id="ui-eh"></p>
+    </div>
+    <div id="vf"></div>
+  </main>
+
+  <aside class="sidebar-right">
+    <div class="ph"><h3 id="ui-pvt"></h3><span class="pc" id="pvc"></span></div>
+    <div class="pb" id="pvb"></div>
+  </aside>
+</div>
+
+<div class="status-bar">
+  <div class="sl"><span><span class="sd"></span><span id="ui-sr"></span></span><span id="st-b"></span><span id="st-v"></span></div>
+  <span>STM Group — RFQ Configurator v2.0</span>
+</div>
+
+<script>
+// ═════════════════════════════════════
+//  UI TRANSLATIONS (NL / EN / DE)
+// ═════════════════════════════════════
+const UI = {
+nl:{
+  sub:'Offerte Configurator — PG08 Montage', btnR:'↻ Reset', btnE:'⬇ Exporteren naar Word',
+  pt:'Projectgegevens', pn:'Projectnaam', pr:'Offertenummer', pd:'Datum', ps:'Leverancier / Geadresseerde', fw:'Zetwerk scope',
+  oSI:'Leverancier: Leveren & Monteren zetwerk', oIO:'Leverancier: Alleen monteren (STM levert)',
+  st:'Selecteer tekstblokken', sh:'Selecteer blokken voor de aanvraag. Verplichte blokken zijn voorgeselecteerd.',
+  et:'Selecteer tekstblokken om te beginnen', eh:'Kies de scope-items uit het linkerpaneel. De variabelen verschijnen hier.',
+  pvt:'Live Voorbeeld', pve:'Selecteer blokken om voorbeeld te zien',
+  sr:'Gereed', bsel:'blokken geselecteerd', vfil:'variabelen ingevuld', bk:'blokken',
+  req:'Verplicht', opt:'Optioneel', sel:'— kies —',
+  io:'Alleen montage', si:'Leveren & Monteren', sv:'Scope varieert ⚠',
+  dT:'Aanvraag offerte', dS:'Geachte heer/mevrouw,', dI:'Graag ontvangen wij uw prijsopgave voor onderstaande werkzaamheden.',
+  dC:'Wij verzoeken u uw prijsopgave per onderdeel te specificeren.', dG:'Met vriendelijke groet,',
+  dDt:'Datum', dRf:'Referentie', dPj:'Project', dSu:'Leverancier'
+},
+en:{
+  sub:'RFQ Configurator — PG08 Erection', btnR:'↻ Reset', btnE:'⬇ Export to Word',
+  pt:'Project Details', pn:'Project Name', pr:'Quote Reference', pd:'Date', ps:'Supplier / Addressee', fw:'Flashwork Scope',
+  oSI:'Supplier: Supply & Install flashwork', oIO:'Supplier: Install only (STM supplies)',
+  st:'Select Text Blocks', sh:'Toggle blocks to include in the RFQ. Mandatory blocks are pre-selected.',
+  et:'Select text blocks to begin', eh:'Choose scope items from the left panel. Variables will appear here.',
+  pvt:'Live Preview', pve:'Select blocks to see RFQ preview',
+  sr:'Ready', bsel:'blocks selected', vfil:'variables filled', bk:'blocks',
+  req:'Required', opt:'Optional', sel:'— select —',
+  io:'Install only', si:'Supply & Install', sv:'Scope varies ⚠',
+  dT:'Request for Quotation', dS:'Dear Sir/Madam,', dI:'We would like to receive your quotation for the works described below.',
+  dC:'Please provide your pricing per scope item.', dG:'Kind regards,',
+  dDt:'Date', dRf:'Reference', dPj:'Project', dSu:'Supplier'
+},
+de:{
+  sub:'Angebotsanfrage — PG08 Montage', btnR:'↻ Zurücksetzen', btnE:'⬇ Export nach Word',
+  pt:'Projektdaten', pn:'Projektname', pr:'Angebotsnummer', pd:'Datum', ps:'Lieferant / Empfänger', fw:'Kantteile Umfang',
+  oSI:'Lieferant: Liefern & Montieren Kantteile', oIO:'Lieferant: Nur Montage (STM liefert)',
+  st:'Textbausteine auswählen', sh:'Bausteine für die Anfrage auswählen. Pflichtbausteine sind vorausgewählt.',
+  et:'Textbausteine auswählen', eh:'Wählen Sie die Leistungspositionen im linken Panel.',
+  pvt:'Live-Vorschau', pve:'Bausteine auswählen für Vorschau',
+  sr:'Bereit', bsel:'Bausteine ausgewählt', vfil:'Variablen ausgefüllt', bk:'Bausteine',
+  req:'Pflicht', opt:'Optional', sel:'— wählen —',
+  io:'Nur Montage', si:'Liefern & Montieren', sv:'Umfang variiert ⚠',
+  dT:'Angebotsanfrage', dS:'Sehr geehrte Damen und Herren,', dI:'Wir bitten um Ihr Angebot für die nachfolgend beschriebenen Leistungen.',
+  dC:'Bitte geben Sie Ihre Preise je Leistungsposition an.', dG:'Mit freundlichen Grüßen,',
+  dDt:'Datum', dRf:'Referenz', dPj:'Projekt', dSu:'Lieferant'
+}};
+
+const CL = {
+nl:{ROOF:'🏗️ Dakbeplating',WALL:'🧱 Gevelbekleding',INTERIOR:'🏠 Binnenwanden',EQUIPMENT:'⚙️ Materieel',CONDITIONS:'📋 Uitgangspunten',COMMERCIAL:'💰 Commercieel'},
+en:{ROOF:'🏗️ Roof Cladding',WALL:'🧱 Wall Cladding',INTERIOR:'🏠 Interior Walls',EQUIPMENT:'⚙️ Equipment',CONDITIONS:'📋 Conditions',COMMERCIAL:'💰 Commercial Terms'},
+de:{ROOF:'🏗️ Dachverkleidung',WALL:'🧱 Fassadenverkleidung',INTERIOR:'🏠 Innenwände',EQUIPMENT:'⚙️ Geräte',CONDITIONS:'📋 Bedingungen',COMMERCIAL:'💰 Kaufmännisch'}
+};
+
+// ═════════════════════════════════════
+//  TEXT BLOCKS (trilingual)
+// ═════════════════════════════════════
+const TB = [
+{id:'TB-ROOF-01',cat:'ROOF',mand:true,sl:'install_only',
+ ti:{nl:'Dakplaten montage',en:'Roof Plate Installation',de:'Dachplatenmontage'},
+ ds:{nl:'Montage dakplaten geleverd door STM',en:'Mounting roof plates supplied by STM',de:'Montage der von STM gelieferten Dachplatten'},
+ tp:{
+  nl:'Montage van de dakplaten door Staalmeesters geleverd.\nCirca {qty_m2} m² sendzimir verzinkte stalen dakplaten.\nType {profile_type}, {thickness_mm} mm dik. Zichtzijde voorzien van {interior_coating}.\nDakplaat is {perforated}.\nBevestiging d.m.v. schietnagels, onderlinge bevestiging d.m.v. teksen h.o.h. {screw_spacing_mm} mm.',
+  en:'Installation of roof plates supplied by Staalmeesters.\nApprox. {qty_m2} m² sendzimir galvanised steel roof plates.\nType {profile_type}, {thickness_mm} mm thick. Visible side with {interior_coating}.\nRoof plate is {perforated}.\nFastening by shot nails, lateral fastening by self-tapping screws c/c {screw_spacing_mm} mm.',
+  de:'Montage der von Staalmeesters gelieferten Dachplatten.\nCa. {qty_m2} m² sendzimir-verzinkte Stahldachplatten.\nTyp {profile_type}, {thickness_mm} mm dick. Sichtseite mit {interior_coating}.\nDachplatte ist {perforated}.\nBefestigung mittels Schussnägeln, Längsbefestigung durch Bohrschrauben Abstand {screw_spacing_mm} mm.'
+ },
+ vars:[
+  {n:'qty_m2',l:{nl:'Dakoppervlak',en:'Roof area',de:'Dachfläche'},u:'m²',t:'number',ph:'960'},
+  {n:'profile_type',l:{nl:'Profieltype',en:'Profile type',de:'Profiltyp'},u:'',t:'select',opts:['SAB 135R/930','SAB 106R/1060','SAB 85R/1142']},
+  {n:'thickness_mm',l:{nl:'Staaldikte',en:'Steel thickness',de:'Stahldicke'},u:'mm',t:'number',ph:'0.88'},
+  {n:'interior_coating',l:{nl:'Interieurcoating',en:'Interior coating',de:'Innenbeschichtung'},u:'',t:'text',ph:'interieurcoating'},
+  {n:'perforated',l:{nl:'Geperforeerd?',en:'Perforated?',de:'Perforiert?'},u:'',t:'select',opts:['niet geperforeerd','geperforeerd']},
+  {n:'screw_spacing_mm',l:{nl:'Schroefafstand',en:'Screw spacing',de:'Schraubenabstand'},u:'mm',t:'number',ph:'500'},
+]},
+{id:'TB-ROOF-02',cat:'ROOF',mand:true,sl:'varies',
+ ti:{nl:'Mastiekhoeken',en:'Mastic Angles',de:'Mastixwinkel'},
+ ds:{nl:'Nok-/goot afdichtstroken',en:'Ridge/eave sealing strips',de:'First-/Traufabdichtungen'},
+ tp:{
+  nl:'Circa {qty_m1} m¹ sendzimir verzinkte stalen mastiekhoeken, max. ontw. breedte {width_mm} mm, {thickness_mm} mm dik.',
+  en:'Approx. {qty_m1} m¹ sendzimir galvanised steel mastic angles, max. dev. width {width_mm} mm, {thickness_mm} mm thick.',
+  de:'Ca. {qty_m1} m¹ sendzimir-verzinkte Stahl-Mastixwinkel, max. abg. Breite {width_mm} mm, {thickness_mm} mm dick.'
+ },
+ vars:[
+  {n:'qty_m1',l:{nl:'Lengte',en:'Length',de:'Länge'},u:'m¹',t:'number',ph:'128'},
+  {n:'width_mm',l:{nl:'Ontw. breedte',en:'Dev. width',de:'Abg. Breite'},u:'mm',t:'number',ph:'250'},
+  {n:'thickness_mm',l:{nl:'Dikte',en:'Thickness',de:'Dicke'},u:'mm',t:'number',ph:'0.75'},
+]},
+{id:'TB-ROOF-03',cat:'ROOF',mand:true,sl:'supply_install',
+ ti:{nl:'Veiligheidsvoorzieningen',en:'Safety Equipment',de:'Sicherheitseinrichtungen'},
+ ds:{nl:'Veiligheidsnetten & randbeveiliging',en:'Safety nets & edge protection',de:'Sicherheitsnetze & Randsicherung'},
+ tp:{
+  nl:'Inclusief veiligheidsvoorzieningen:\nCirca {nets_m2} m² veiligheidsnetten, huurprijs max. {nets_days} werkdagen.\nCirca {edge_m1} m¹ randbeveiliging, huurprijs max. {edge_days} werkdagen.',
+  en:'Including safety provisions:\nApprox. {nets_m2} m² safety nets, rental max. {nets_days} working days.\nApprox. {edge_m1} m¹ edge protection, rental max. {edge_days} working days.',
+  de:'Inklusive Sicherheitseinrichtungen:\nCa. {nets_m2} m² Sicherheitsnetze, Miete max. {nets_days} Arbeitstage.\nCa. {edge_m1} m¹ Randsicherung, Miete max. {edge_days} Arbeitstage.'
+ },
+ vars:[
+  {n:'nets_m2',l:{nl:'Netten oppervlak',en:'Safety nets area',de:'Netzfläche'},u:'m²',t:'number',ph:'960'},
+  {n:'nets_days',l:{nl:'Huurperiode netten',en:'Nets rental',de:'Mietdauer Netze'},u:{nl:'dagen',en:'days',de:'Tage'},t:'number',ph:'15'},
+  {n:'edge_m1',l:{nl:'Randbeveiliging',en:'Edge protection',de:'Randsicherung'},u:'m¹',t:'number',ph:'130'},
+  {n:'edge_days',l:{nl:'Huurperiode rand',en:'Edge rental',de:'Mietdauer Rand'},u:{nl:'dagen',en:'days',de:'Tage'},t:'number',ph:'25'},
+]},
+{id:'TB-WALL-01',cat:'WALL',mand:true,sl:'install_only',
+ ti:{nl:'Sandwichpanelen montage',en:'Sandwich Panel Installation',de:'Sandwichplattenmontage'},
+ ds:{nl:'Montage geïsoleerde gevelpanelen',en:'Mounting insulated wall panels',de:'Montage isolierter Wandpaneele'},
+ tp:{
+  nl:'Het monteren van circa {qty_m2} m² sendzimir verzinkte geïsoleerde gevelpanelen.\n{orientation} gemonteerd, type {panel_type}, {fastening}.\nDikte: {thickness_mm} mm. Werkende breedte: {working_width_mm} mm.\nBuitenplaat: {outer_thickness_mm} mm, {outer_coating} RAL {ral_outer}, profilering {profile_outer}.\nBinnenplaat: {inner_thickness_mm} mm, {inner_coating}, profilering {profile_inner}.\nKern: {core_type}.',
+  en:'Installation of approx. {qty_m2} m² sendzimir galvanised insulated facade panels.\nMounted {orientation}, type {panel_type}, {fastening}.\nThickness: {thickness_mm} mm. Working width: {working_width_mm} mm.\nOuter sheet: {outer_thickness_mm} mm, {outer_coating} RAL {ral_outer}, profile {profile_outer}.\nInner sheet: {inner_thickness_mm} mm, {inner_coating}, profile {profile_inner}.\nCore: {core_type}.',
+  de:'Montage von ca. {qty_m2} m² sendzimir-verzinkten Sandwich-Fassadenpaneelen.\n{orientation} montiert, Typ {panel_type}, {fastening}.\nDicke: {thickness_mm} mm. Wirkbreite: {working_width_mm} mm.\nAußenblech: {outer_thickness_mm} mm, {outer_coating} RAL {ral_outer}, Profilierung {profile_outer}.\nInnenblech: {inner_thickness_mm} mm, {inner_coating}, Profilierung {profile_inner}.\nKern: {core_type}.'
+ },
+ vars:[
+  {n:'qty_m2',l:{nl:'Geveloppervlak',en:'Wall area',de:'Wandfläche'},u:'m²',t:'number',ph:'1001'},
+  {n:'orientation',l:{nl:'Oriëntatie',en:'Orientation',de:'Ausrichtung'},u:'',t:'select',opts:['Verticaal','Horizontaal']},
+  {n:'panel_type',l:{nl:'Paneeltype',en:'Panel type',de:'Paneeltyp'},u:'',t:'text',ph:'Vlak Cladding point'},
+  {n:'fastening',l:{nl:'Bevestiging',en:'Fastening',de:'Befestigung'},u:'',t:'select',opts:['verdekt geschroefd','zichtbaar geschroefd']},
+  {n:'thickness_mm',l:{nl:'Paneeldikte',en:'Panel thickness',de:'Paneeldicke'},u:'mm',t:'number',ph:'100'},
+  {n:'working_width_mm',l:{nl:'Werkende breedte',en:'Working width',de:'Wirkbreite'},u:'mm',t:'number',ph:'1000'},
+  {n:'outer_thickness_mm',l:{nl:'Buitenplaat',en:'Outer steel',de:'Außenblech'},u:'mm',t:'number',ph:'0.60'},
+  {n:'outer_coating',l:{nl:'Coating buiten',en:'Outer coating',de:'Außenbeschichtung'},u:'',t:'select',opts:['HDX','Polyester','Diamond']},
+  {n:'ral_outer',l:{nl:'RAL buiten',en:'RAL outer',de:'RAL außen'},u:'',t:'text',ph:'9016'},
+  {n:'profile_outer',l:{nl:'Profiel buiten',en:'Profile outer',de:'Profil außen'},u:'',t:'select',opts:['vlak','Micro lining MR15','Box LL']},
+  {n:'inner_thickness_mm',l:{nl:'Binnenplaat',en:'Inner steel',de:'Innenblech'},u:'mm',t:'number',ph:'0.50'},
+  {n:'inner_coating',l:{nl:'Coating binnen',en:'Inner coating',de:'Innenbeschichtung'},u:'',t:'text',ph:'interieurcoating 15 mu RAL 9002'},
+  {n:'profile_inner',l:{nl:'Profiel binnen',en:'Profile inner',de:'Profil innen'},u:'',t:'select',opts:['Box LL','Micro lining','vlak']},
+  {n:'core_type',l:{nl:'Kernmateriaal',en:'Core material',de:'Kernmaterial'},u:'',t:'select',opts:['Standaard PIR','PUR','Mineral Wool']},
+]},
+{id:'TB-WALL-02',cat:'WALL',mand:true,sl:'varies',
+ ti:{nl:'Steldorpel / Onderdorpel',en:'Base Profile / Carrier',de:'Fußprofil'},
+ ds:{nl:'Draagprofiel onderzijde gevel',en:'Panel base/carrier profile',de:'Fußprofil unter Fassade'},
+ tp:{nl:'Circa {qty_m1} m¹ steldorpel/onderdorpel, {thickness_mm} mm, max. ontw. breedte {width_mm} mm.',en:'Approx. {qty_m1} m¹ base profile, {thickness_mm} mm, max. dev. width {width_mm} mm.',de:'Ca. {qty_m1} m¹ Fußprofil, {thickness_mm} mm, max. abg. Breite {width_mm} mm.'},
+ vars:[{n:'qty_m1',l:{nl:'Lengte',en:'Length',de:'Länge'},u:'m¹',t:'number',ph:'148'},{n:'width_mm',l:{nl:'Ontw. breedte',en:'Dev. width',de:'Abg. Breite'},u:'mm',t:'number',ph:'280'},{n:'thickness_mm',l:{nl:'Dikte',en:'Thickness',de:'Dicke'},u:'mm',t:'number',ph:'0.75'}]},
+{id:'TB-WALL-03',cat:'WALL',mand:true,sl:'varies',
+ ti:{nl:'Overzetdorpels',en:'Drip Profiles',de:'Abdeckprofile'},
+ ds:{nl:'Afdekprofielen over onderdorpel',en:'Cover/drip flashings',de:'Abdeckprofile'},
+ tp:{nl:'Circa {qty_m1} m¹ overzetdorpels, max. ontw. breedte {width_mm} mm, {thickness_mm} mm dik, voorzien van {coating} coating in kleur als buitenzijde.',en:'Approx. {qty_m1} m¹ drip profiles, max. dev. width {width_mm} mm, {thickness_mm} mm thick, {coating} coating matching facade colour.',de:'Ca. {qty_m1} m¹ Abdeckprofile, max. abg. Breite {width_mm} mm, {thickness_mm} mm dick, {coating}-Beschichtung farblich passend.'},
+ vars:[{n:'qty_m1',l:{nl:'Lengte',en:'Length',de:'Länge'},u:'m¹',t:'number',ph:'148'},{n:'width_mm',l:{nl:'Ontw. breedte',en:'Dev. width',de:'Abg. Breite'},u:'mm',t:'number',ph:'140'},{n:'thickness_mm',l:{nl:'Dikte',en:'Thickness',de:'Dicke'},u:'mm',t:'number',ph:'0.63'},{n:'coating',l:{nl:'Coating',en:'Coating',de:'Beschichtung'},u:'',t:'select',opts:['HDX','Polyester','Diamond']}]},
+{id:'TB-WALL-04',cat:'WALL',mand:true,sl:'varies',
+ ti:{nl:'Dakkappen / Afdekkappen',en:'Roof Edge Caps',de:'Dachrandkappen'},
+ ds:{nl:'Afdekprofielen dakrand',en:'Capping at roof edge',de:'Abdeckung Dachkante'},
+ tp:{nl:'Circa {qty_m1} m¹ afdekkappen als dakrand, max. ontw. breedte {width_mm} mm, voorzien van {coating} coating, kleur als panelen.',en:'Approx. {qty_m1} m¹ roof edge caps, max. dev. width {width_mm} mm, {coating} coating matching panels.',de:'Ca. {qty_m1} m¹ Dachrandkappen, max. abg. Breite {width_mm} mm, {coating}-Beschichtung farblich passend.'},
+ vars:[{n:'qty_m1',l:{nl:'Lengte',en:'Length',de:'Länge'},u:'m¹',t:'number',ph:'121'},{n:'width_mm',l:{nl:'Ontw. breedte',en:'Dev. width',de:'Abg. Breite'},u:'mm',t:'number',ph:'350'},{n:'coating',l:{nl:'Coating',en:'Coating',de:'Beschichtung'},u:'',t:'select',opts:['HDX','Polyester','Diamond']}]},
+{id:'TB-WALL-05',cat:'WALL',mand:true,sl:'varies',
+ ti:{nl:'U-profiel dakrand',en:'U-Profile Roof Edge',de:'U-Profil Dachrand'},
+ ds:{nl:'U-profiel paneelafdekker',en:'U-profile panel cover',de:'U-Profil Paneelabdeckung'},
+ tp:{nl:'Circa {qty_m1} m¹ U-profiel (paneel afdekker), max. ontw. breedte {width_mm} mm, {thickness_mm} mm dik.',en:'Approx. {qty_m1} m¹ U-profile (panel cover), max. dev. width {width_mm} mm, {thickness_mm} mm thick.',de:'Ca. {qty_m1} m¹ U-Profil (Paneelabdeckung), max. abg. Breite {width_mm} mm, {thickness_mm} mm dick.'},
+ vars:[{n:'qty_m1',l:{nl:'Lengte',en:'Length',de:'Länge'},u:'m¹',t:'number',ph:'121'},{n:'width_mm',l:{nl:'Ontw. breedte',en:'Dev. width',de:'Abg. Breite'},u:'mm',t:'number',ph:'260'},{n:'thickness_mm',l:{nl:'Dikte',en:'Thickness',de:'Dicke'},u:'mm',t:'number',ph:'0.75'}]},
+{id:'TB-WALL-06',cat:'WALL',mand:true,sl:'varies',
+ ti:{nl:'Hoekstukken',en:'Corner Pieces',de:'Eckstücke'},
+ ds:{nl:'Buiten- en binnenhoekprofielen',en:'External & internal corners',de:'Außen- und Innenecken'},
+ tp:{nl:'Circa {qty_outer_m1} m¹ hoekstukken buiten, ontw. breedte {width_outer_mm} mm, {coating} coating.\nCirca {qty_inner_m1} m¹ hoekstukken binnen, ontw. breedte {width_inner_mm} mm.',en:'Approx. {qty_outer_m1} m¹ external corners, dev. width {width_outer_mm} mm, {coating} coating.\nApprox. {qty_inner_m1} m¹ internal corners, dev. width {width_inner_mm} mm.',de:'Ca. {qty_outer_m1} m¹ Außenecken, abg. Breite {width_outer_mm} mm, {coating}-Beschichtung.\nCa. {qty_inner_m1} m¹ Innenecken, abg. Breite {width_inner_mm} mm.'},
+ vars:[{n:'qty_outer_m1',l:{nl:'Buitenhoeken',en:'Ext. corners',de:'Außenecken'},u:'m¹',t:'number',ph:'48'},{n:'width_outer_mm',l:{nl:'Breedte buiten',en:'Width outer',de:'Breite außen'},u:'mm',t:'number',ph:'500'},{n:'qty_inner_m1',l:{nl:'Binnenhoeken',en:'Int. corners',de:'Innenecken'},u:'m¹',t:'number',ph:'48'},{n:'width_inner_mm',l:{nl:'Breedte binnen',en:'Width inner',de:'Breite innen'},u:'mm',t:'number',ph:'400'},{n:'coating',l:{nl:'Coating',en:'Coating',de:'Beschichtung'},u:'',t:'select',opts:['HDX','Polyester','Diamond']}]},
+{id:'TB-WALL-07',cat:'WALL',mand:false,sl:'varies',
+ ti:{nl:'Dagkanten kozijnen',en:'Window/Door Reveals',de:'Fensterleibungen'},
+ ds:{nl:'Zetwerk rondom kozijnen',en:'Flashwork around openings',de:'Kantteile um Öffnungen'},
+ tp:{nl:'Circa {qty_reveal_m1} m¹ dagkant kozijnen, ontw. {width_reveal_mm} mm.\nCirca {qty_ceiling_m1} m¹ plafondplaat kozijnen, ontw. {width_ceiling_mm} mm.\nCirca {qty_drip_m1} m¹ lekdorpels boven kozijnen, ontw. {width_drip_mm} mm.',en:'Approx. {qty_reveal_m1} m¹ window reveals, dev. {width_reveal_mm} mm.\nApprox. {qty_ceiling_m1} m¹ soffit plates, dev. {width_ceiling_mm} mm.\nApprox. {qty_drip_m1} m¹ drip profiles above openings, dev. {width_drip_mm} mm.',de:'Ca. {qty_reveal_m1} m¹ Fensterleibungen, abg. {width_reveal_mm} mm.\nCa. {qty_ceiling_m1} m¹ Deckenplatten, abg. {width_ceiling_mm} mm.\nCa. {qty_drip_m1} m¹ Tropfprofile über Öffnungen, abg. {width_drip_mm} mm.'},
+ vars:[{n:'qty_reveal_m1',l:{nl:'Dagkanten',en:'Reveals',de:'Leibungen'},u:'m¹',t:'number',ph:'40'},{n:'width_reveal_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'250'},{n:'qty_ceiling_m1',l:{nl:'Plafondplaten',en:'Soffit plates',de:'Deckenplatten'},u:'m¹',t:'number',ph:'38'},{n:'width_ceiling_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'150'},{n:'qty_drip_m1',l:{nl:'Lekdorpels',en:'Drip profiles',de:'Tropfprofile'},u:'m¹',t:'number',ph:'38'},{n:'width_drip_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'150'}]},
+{id:'TB-WALL-08',cat:'WALL',mand:false,sl:'varies',
+ ti:{nl:'Dagkanten overheaddeur',en:'Overhead Door Reveals',de:'Sektionaltorleibungen'},
+ ds:{nl:'Zetwerk rondom overheaddeuren',en:'Flashwork around overhead doors',de:'Kantteile um Sektionaltore'},
+ tp:{nl:'Circa {qty_side_m1} m¹ dagkant overheaddeur, ontw. {width_side_mm} mm.\nCirca {qty_ceiling_m1} m¹ plafondplaat overheaddeur, ontw. {width_ceiling_mm} mm.',en:'Approx. {qty_side_m1} m¹ overhead door reveals, dev. {width_side_mm} mm.\nApprox. {qty_ceiling_m1} m¹ overhead door soffit, dev. {width_ceiling_mm} mm.',de:'Ca. {qty_side_m1} m¹ Sektionaltorleibungen, abg. {width_side_mm} mm.\nCa. {qty_ceiling_m1} m¹ Deckenplatten Sektionaltor, abg. {width_ceiling_mm} mm.'},
+ vars:[{n:'qty_side_m1',l:{nl:'Dagkanten',en:'Side reveals',de:'Seitenleibungen'},u:'m¹',t:'number',ph:'8.5'},{n:'width_side_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'500'},{n:'qty_ceiling_m1',l:{nl:'Plafondplaten',en:'Soffit plates',de:'Deckenplatten'},u:'m¹',t:'number',ph:'4'},{n:'width_ceiling_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'400'}]},
+{id:'TB-INT-01',cat:'INTERIOR',mand:false,sl:'install_only',
+ ti:{nl:'Binnenwanden',en:'Interior Walls',de:'Innenwände'},
+ ds:{nl:'Binnenwandpanelen door STM geleverd',en:'Interior panels supplied by STM',de:'Innenwandpaneele von STM geliefert'},
+ tp:{nl:'Montage circa {qty_m2} m² binnenwandpanelen, incl. materieel en bevestigingsmiddelen.\n{cannelurevulling}.\nZetwerk: circa {u_profile_m1} m¹ U-profiel, ontw. {u_width_mm} mm.\nCirca {corner_m1} m¹ hoeklijnen, ontw. {corner_width_mm} mm.',en:'Installation of approx. {qty_m2} m² interior wall panels, incl. equipment and fasteners.\n{cannelurevulling}.\nFlashwork: approx. {u_profile_m1} m¹ U-profile, dev. {u_width_mm} mm.\nApprox. {corner_m1} m¹ corner profiles, dev. {corner_width_mm} mm.',de:'Montage ca. {qty_m2} m² Innenwandpaneele, inkl. Geräte und Befestigungsmittel.\n{cannelurevulling}.\nKantteile: ca. {u_profile_m1} m¹ U-Profil, abg. {u_width_mm} mm.\nCa. {corner_m1} m¹ Eckprofile, abg. {corner_width_mm} mm.'},
+ vars:[{n:'qty_m2',l:{nl:'Oppervlak',en:'Area',de:'Fläche'},u:'m²',t:'number',ph:'250'},{n:'cannelurevulling',l:{nl:'Cannelurevulling',en:'Cannelure filling',de:'Sickenausfüllung'},u:'',t:'select',opts:['Inclusief cannelurevulling','Exclusief cannelurevulling']},{n:'u_profile_m1',l:{nl:'U-profiel',en:'U-profile',de:'U-Profil'},u:'m¹',t:'number',ph:'36'},{n:'u_width_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'190'},{n:'corner_m1',l:{nl:'Hoeklijnen',en:'Corner profiles',de:'Eckprofile'},u:'m¹',t:'number',ph:'38'},{n:'corner_width_mm',l:{nl:'Breedte',en:'Width',de:'Breite'},u:'mm',t:'number',ph:'120'}]},
+{id:'TB-EQUIP-01',cat:'EQUIPMENT',mand:true,sl:'supply_install',
+ ti:{nl:'Materieel & Toegang',en:'Equipment & Access',de:'Geräte & Zugang'},
+ ds:{nl:'Kraan, hoogwerker, zuignap',en:'Cranes, platforms, suction',de:'Kran, Hebebühne, Saugnapf'},
+ tp:{nl:'Inclusief kraan ({crane_type}) voor montage en lossen, incl. zuignap/hijstangen.\nInclusief klimmateriaal ({platform_type}).\nInclusief bevestigingsmateriaal en zaagwerk.',en:'Including crane ({crane_type}) for installation and unloading, incl. suction cups/lifting beams.\nIncluding access equipment ({platform_type}).\nIncluding fasteners and sawing work.',de:'Inklusive Kran ({crane_type}) für Montage und Entladung, inkl. Saugnäpfe/Hebegeschirr.\nInklusive Zugangstechnik ({platform_type}).\nInklusive Befestigungsmaterial und Sägearbeiten.'},
+ vars:[{n:'crane_type',l:{nl:'Kraantype',en:'Crane type',de:'Krantyp'},u:'',t:'text',ph:'33m torenkraan'},{n:'platform_type',l:{nl:'Hoogwerker',en:'Access platform',de:'Hebebühne'},u:'',t:'text',ph:'telescoophoogwerker 12m'}]},
+{id:'TB-COND-01',cat:'CONDITIONS',mand:true,sl:'n/a',
+ ti:{nl:'Uitgangspunten',en:'Site Conditions',de:'Baustellenbedingungen'},
+ ds:{nl:'Standaard uitgangspunten',en:'Standard assumptions',de:'Standardannahmen'},
+ tp:{nl:'Uitgangspunten:\n- Montage in {work_phases} aaneengesloten periode(n). Onderbrekingen worden doorberekend.\n- Montage op vlakke (staal)constructie. Niet door ons op afwijkingen gecontroleerd.\n- Terrein rondom voldoende breed, verhard en vrij van obstakels.\n- Rijplaten door en voor rekening van opdrachtgever.\n- Stroom gratis binnen 30 meter.\n- Schaftkeet en sanitair door opdrachtgever.\n- Tussentijds niet afgedekt (weerrisico opdrachtgever).\n- CAR verzekering afgesloten door opdrachtgever.',en:'Site conditions:\n- Work in {work_phases} continuous period(s). Interruptions charged separately.\n- Installation on flat steel structure. Not checked for deviations.\n- Sufficient access around site, hardened and obstacle-free.\n- Trackway mats at client\'s expense.\n- Power supply free within 30m radius.\n- Welfare facilities by client.\n- No interim covering (weather risk with client).\n- Client has comprehensive CAR insurance.',de:'Baustellenbedingungen:\n- Ausführung in {work_phases} zusammenhängenden Periode(n). Unterbrechungen werden berechnet.\n- Montage auf ebener Stahlkonstruktion. Nicht auf Abweichungen geprüft.\n- Ausreichend Zugang, befestigt und hindernisfrei.\n- Fahrplatten auf Kosten des Auftraggebers.\n- Strom kostenlos im Umkreis von 30m.\n- Baustelleneinrichtung durch Auftraggeber.\n- Keine Zwischenabdeckung (Witterungsrisiko Auftraggeber).\n- CAR-Versicherung durch Auftraggeber abgeschlossen.'},
+ vars:[{n:'work_phases',l:{nl:'Werkfasen',en:'Work phases',de:'Arbeitsphasen'},u:'',t:'select',opts:['één','meerdere']}]},
+{id:'TB-COND-02',cat:'CONDITIONS',mand:true,sl:'n/a',
+ ti:{nl:'Uitsluitingen',en:'Exclusions',de:'Ausschlüsse'},
+ ds:{nl:'Niet inbegrepen',en:'Excluded items',de:'Nicht enthalten'},
+ tp:{nl:'Niet in onze prijs opgenomen:\n• Cannelurevulling kopse kanten dakplaten\n• Afdichtingsband tussen panelen en constructie\n• Schoonmaken vervuiling door slechte omstandigheden\n• Afvoeren verpakkings-/afvalmateriaal (opdrachtgever zorgt voor container)\n• Leveren PVC noodoversstort\n• Constructieve berekeningen en tekenwerk\n• Demontage/sloopwerk\n• Sparingen >250mm dienen volledig ondersteund (raveling)',en:'Not included in our price:\n• Cannelure filling at ridge ends\n• Sealing tape between panels and substructure\n• Cleaning contamination from poor site conditions\n• Waste removal (client provides container)\n• Supply of PVC emergency overflow\n• Structural calculations and drawings\n• Demolition/dismantling work\n• Openings >250mm must be fully trimmed',de:'Nicht im Preis enthalten:\n• Sickenausfüllung an Stirnseiten\n• Dichtungsband zwischen Paneelen und Konstruktion\n• Reinigung bei schlechten Baustellenbedingungen\n• Abfallentsorgung (Auftraggeber stellt Container)\n• PVC-Notüberlauf\n• Statik und Zeichenarbeit\n• Demontage-/Abrissarbeiten\n• Öffnungen >250mm müssen allseitig unterstützt sein'},
+ vars:[]},
+{id:'TB-COMM-01',cat:'COMMERCIAL',mand:true,sl:'n/a',
+ ti:{nl:'Prijs- en leveringscondities',en:'Commercial Terms',de:'Kaufmännische Bedingungen'},
+ ds:{nl:'Betalingsvoorwaarden, geldigheid',en:'Payment terms, validity',de:'Zahlungsbedingungen, Gültigkeit'},
+ tp:{nl:'Prijs- en leveringscondities:\n- Prijzen {validity_days} dagen geldig.\n- Ongedeelde opdracht.\n- Exclusief BTW.\n- Levertijd: ca. {lead_time} weken na opdracht.\n- Materiaalprijsstijgingen worden doorberekend.\n\nBetalingstermijnen:\n- {term_1_pct}% bij opdracht\n- Na rato van werkzaamheden\n- {term_final_pct}% bij oplevering\n\nNetto binnen 14 dagen na factuurdatum.',en:'Commercial terms:\n- Prices valid {validity_days} days.\n- Undivided order.\n- Excluding VAT.\n- Lead time: approx. {lead_time} weeks after order.\n- Material price increases passed on.\n\nPayment terms:\n- {term_1_pct}% upon order\n- Pro rata on progress\n- {term_final_pct}% upon completion\n\nNet within 14 days of invoice date.',de:'Kaufmännische Bedingungen:\n- Preise {validity_days} Tage gültig.\n- Ungeteilter Auftrag.\n- Ohne MwSt.\n- Lieferzeit: ca. {lead_time} Wochen nach Auftrag.\n- Materialpreiserhöhungen werden weitergegeben.\n\nZahlungsbedingungen:\n- {term_1_pct}% bei Auftragserteilung\n- Anteilig nach Fortschritt\n- {term_final_pct}% bei Fertigstellung\n\nNetto innerhalb 14 Tagen nach Rechnungsdatum.'},
+ vars:[{n:'validity_days',l:{nl:'Geldigheid',en:'Validity',de:'Gültigkeit'},u:{nl:'dagen',en:'days',de:'Tage'},t:'number',ph:'14'},{n:'lead_time',l:{nl:'Levertijd',en:'Lead time',de:'Lieferzeit'},u:{nl:'weken',en:'weeks',de:'Wochen'},t:'text',ph:'6-8'},{n:'term_1_pct',l:{nl:'Eerste termijn',en:'First payment',de:'Erste Rate'},u:'%',t:'number',ph:'10'},{n:'term_final_pct',l:{nl:'Laatste termijn',en:'Final payment',de:'Letzte Rate'},u:'%',t:'number',ph:'10'}]},
+];
+
+// ═════════════════════════════
+//  STATE & HELPERS
+// ═════════════════════════════
+const S={sel:new Set(),vals:{},lang:'nl'};
+const CO=['ROOF','WALL','INTERIOR','EQUIPMENT','CONDITIONS','COMMERCIAL'];
+const t=k=>UI[S.lang]?.[k]||UI.en[k]||k;
+const L=o=>typeof o==='string'?o:(o[S.lang]||o.en||o.nl||'');
+
+// ═════════════════════════════
+//  LANGUAGE SWITCH
+// ═════════════════════════════
+function setLang(lang){
+  S.lang=lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  document.documentElement.lang=lang;
+  applyUI(); renderBL(); renderVF(); upd(); updS();
+}
+function applyUI(){
+  document.getElementById('ui-sub').textContent=t('sub');
+  document.getElementById('btn-r').innerHTML=t('btnR');
+  document.getElementById('btn-e').innerHTML=t('btnE');
+  document.getElementById('ui-pt').textContent=t('pt');
+  document.getElementById('lbl-pn').textContent=t('pn');
+  document.getElementById('lbl-pr').textContent=t('pr');
+  document.getElementById('lbl-pd').textContent=t('pd');
+  document.getElementById('lbl-ps').textContent=t('ps');
+  document.getElementById('lbl-fw').textContent=t('fw');
+  document.getElementById('o-si').textContent=t('oSI');
+  document.getElementById('o-io').textContent=t('oIO');
+  document.getElementById('ui-st').textContent=t('st');
+  document.getElementById('ui-sh').textContent=t('sh');
+  document.getElementById('ui-et').textContent=t('et');
+  document.getElementById('ui-eh').textContent=t('eh');
+  document.getElementById('ui-pvt').textContent=t('pvt');
+  document.getElementById('ui-sr').textContent=t('sr');
+}
+
+// ═════════════════════════════
+//  INIT
+// ═════════════════════════════
+function init(){
+  document.getElementById('proj-date').value=new Date().toISOString().split('T')[0];
+  TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};});
+  applyUI();renderBL();renderVF();upd();updS();
+}
+
+// ═════════════════════════════
+//  BLOCK LIST
+// ═════════════════════════════
+function renderBL(){
+  let h='';
+  CO.forEach(cat=>{
+    const bs=TB.filter(b=>b.cat===cat);if(!bs.length)return;
+    h+=`<div class="block-category"><div class="block-category-label">${CL[S.lang]?.[cat]||cat}</div>`;
+    bs.forEach(b=>{
+      const s=S.sel.has(b.id);
+      h+=`<div class="bc ${s?'sel':''} ${b.mand?'mand':''}" onclick="tog('${b.id}')" id="c-${b.id}"><div class="bt"></div><div class="bi"><h4>${L(b.ti)}</h4><p>${L(b.ds)}</p></div><div class="bb">${b.mand?t('req'):t('opt')}</div></div>`;
+    });
+    h+='</div>';
+  });
+  document.getElementById('bl').innerHTML=h;
+}
+function tog(id){S.sel.has(id)?S.sel.delete(id):S.sel.add(id);document.getElementById('c-'+id).classList.toggle('sel');renderVF();upd();updS();}
+
+// ═════════════════════════════
+//  VARIABLE FORMS
+// ═════════════════════════════
+function renderVF(){
+  const c=document.getElementById('vf'),es=document.getElementById('es');
+  const sel=TB.filter(b=>S.sel.has(b.id)&&b.vars.length>0);
+  if(!sel.length){es.style.display='flex';c.innerHTML='';return;}
+  es.style.display='none';
+  let h='';
+  sel.forEach(b=>{
+    const sl=b.sl,sc=sl==='varies'?'v':'',slab=sl==='install_only'?t('io'):sl==='supply_install'?t('si'):sl==='varies'?t('sv'):'';
+    h+=`<div class="vs"><div class="vsh"><h3>${L(b.ti)}</h3>${slab?`<span class="sb ${sc}">${slab}</span>`:''}</div><div class="vg">`;
+    b.vars.forEach(v=>{
+      const val=S.vals[b.id]?.[v.n]||'',us=typeof v.u==='object'?L(v.u):v.u,ll=L(v.l);
+      if(v.t==='select'){
+        h+=`<div class="vf"><label>${ll} ${us?`<span class="u">(${us})</span>`:''}</label><select onchange="sv('${b.id}','${v.n}',this.value)"><option value="">${t('sel')}</option>${v.opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+      }else{
+        h+=`<div class="vf"><label>${ll} ${us?`<span class="u">(${us})</span>`:''}</label><input type="text" value="${val}" placeholder="${v.ph||''}" oninput="sv('${b.id}','${v.n}',this.value)"></div>`;
+      }
+    });
+    h+='</div></div>';
+  });
+  c.innerHTML=h;
+}
+function sv(bid,vn,val){if(!S.vals[bid])S.vals[bid]={};S.vals[bid][vn]=val;upd();updS();}
+
+// ═════════════════════════════
+//  PREVIEW
+// ═════════════════════════════
+function upd(){
+  const c=document.getElementById('pvb'),pc=document.getElementById('pvc');
+  const sel=TB.filter(b=>S.sel.has(b.id));
+  pc.textContent=sel.length+' '+t('bk');
+  if(!sel.length){c.innerHTML=`<p style="color:#666;font-size:13px;text-align:center;margin-top:40px">${t('pve')}</p>`;return;}
+  let h='';
+  sel.forEach(b=>{
+    let tx=L(b.tp);const vs=S.vals[b.id]||{};
+    tx=tx.replace(/\{(\w+)\}/g,(m,vn)=>{const val=vs[vn];if(val)return`<span class="vh">${val}</span>`;const vd=b.vars.find(v=>v.n===vn);return`<span class="ve">[${vd?L(vd.l):vn}]</span>`;});
+    h+=`<div class="pbl"><div class="pbt">${b.id} — ${L(b.ti)}</div><div class="ptx">${tx}</div></div>`;
+  });
+  c.innerHTML=h;
+}
+function updS(){
+  document.getElementById('st-b').textContent=S.sel.size+' '+t('bsel');
+  let f=0,tt=0;TB.filter(b=>S.sel.has(b.id)).forEach(b=>{b.vars.forEach(v=>{tt++;if(S.vals[b.id]?.[v.n])f++;});});
+  document.getElementById('st-v').textContent=`${f}/${tt} ${t('vfil')}`;
+}
+function resetAll(){S.sel.clear();TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};});renderBL();renderVF();upd();updS();}
+
+// ═════════════════════════════
+//  WORD EXPORT (in active language)
+// ═════════════════════════════
+async function exportToWord(){
+  const{Document:D,Packer:Pk,Paragraph:P,TextRun:T,Table:Tb,TableRow:TR,TableCell:TC,BorderStyle:BS,WidthType:WT,Header:H,Footer:F,TabStopType:TS}=docx;
+  const pn=document.getElementById('proj-name').value||t('pn'),pr=document.getElementById('proj-ref').value||'STP00000',pd=document.getElementById('proj-date').value||new Date().toISOString().split('T')[0],ps=document.getElementById('proj-supplier').value||t('ps');
+  const dl=S.lang==='de'?'de-DE':S.lang==='en'?'en-GB':'nl-NL';
+  const ds=new Date(pd).toLocaleDateString(dl,{day:'numeric',month:'long',year:'numeric'});
+  const O='F94816',Dk='22293B';
+  const sel=TB.filter(b=>S.sel.has(b.id)),c=[];
+  c.push(new P({spacing:{before:600,after:200},children:[new T({text:t('dT')+' — '+pn,bold:true,size:36,color:O,font:'Arial'})]}));
+  c.push(new P({border:{bottom:{style:BS.SINGLE,size:6,color:O,space:1}},spacing:{after:200},children:[]}));
+  const mb={style:BS.SINGLE,size:1,color:'CCC'},mbs={top:mb,bottom:mb,left:mb,right:mb},mm={top:60,bottom:60,left:100,right:100};
+  c.push(new Tb({width:{size:9026,type:WT.DXA},columnWidths:[2256,2256,2256,2258],rows:[
+    new TR({children:[new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:t('dDt'),bold:true,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:t('dRf'),bold:true,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:t('dPj'),bold:true,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2258,type:WT.DXA},children:[new P({children:[new T({text:t('dSu'),bold:true,size:18,font:'Arial'})]})]})]}),
+    new TR({children:[new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:ds,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:pr,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2256,type:WT.DXA},children:[new P({children:[new T({text:pn,size:18,font:'Arial'})]})]}),new TC({borders:mbs,margins:mm,width:{size:2258,type:WT.DXA},children:[new P({children:[new T({text:ps,size:18,font:'Arial'})]})]})]}),
+  ]}));
+  c.push(new P({spacing:{after:200},children:[]}));
+  c.push(new P({spacing:{after:200},children:[new T({text:t('dS'),size:20,font:'Arial'})]}));
+  c.push(new P({spacing:{after:200},children:[new T({text:t('dI'),size:20,font:'Arial'})]}));
+  let cc='';
+  sel.forEach(b=>{
+    if(b.cat!==cc){cc=b.cat;c.push(new P({spacing:{before:300},children:[]}));c.push(new P({spacing:{after:100},children:[new T({text:(CL[S.lang]?.[cc]||cc).replace(/^.+?\s/,''),bold:true,size:24,color:O,font:'Arial'})]}));c.push(new P({border:{bottom:{style:BS.SINGLE,size:2,color:O,space:1}},spacing:{after:160},children:[]}));}
+    c.push(new P({spacing:{before:160,after:80},children:[new T({text:L(b.ti),bold:true,size:20,color:Dk,font:'Arial'})]}));
+    let tx=L(b.tp);const vs=S.vals[b.id]||{};tx=tx.replace(/\{(\w+)\}/g,(m,vn)=>vs[vn]||'['+vn+']');
+    tx.split('\n').forEach(ln=>{const tr=ln.trim();if(!tr)return;c.push(new P({spacing:{after:40},indent:tr.startsWith('-')||tr.startsWith('•')?{left:360}:{},children:[new T({text:tr,size:20,font:'Arial'})]}));});
+  });
+  c.push(new P({spacing:{before:400},children:[]}));
+  c.push(new P({spacing:{after:100},children:[new T({text:t('dC'),size:20,font:'Arial'})]}));
+  c.push(new P({spacing:{after:200},children:[new T({text:t('dG'),size:20,font:'Arial'})]}));
+  c.push(new P({children:[new T({text:'STM Group',bold:true,size:20,color:Dk,font:'Arial'})]}));
+  const doc=new D({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1200,bottom:1440,left:1200}}},
+    headers:{default:new H({children:[new P({border:{bottom:{style:BS.SINGLE,size:4,color:O,space:1}},tabStops:[{type:TS.RIGHT,position:9506}],children:[new T({text:'STM GROUP',bold:true,size:16,color:Dk,font:'Arial'}),new T({text:'\tRef: '+pr,size:16,color:'999999',font:'Arial'})]})]})} ,
+    footers:{default:new F({children:[new P({border:{top:{style:BS.SINGLE,size:2,color:'CCCCCC',space:1}},tabStops:[{type:TS.RIGHT,position:9506}],children:[new T({text:'STMgroup.com',size:14,color:'999999',font:'Arial'}),new T({text:"\tLet's forge the future together",size:14,color:O,font:'Arial',italics:true})]})]})} ,
+    children:c}]});
+  const blob=await Pk.toBlob(doc);
+  saveAs(blob,`RFQ_${pr}_${pn.replace(/\s+/g,'_')}_${S.lang.toUpperCase()}.docx`);
+}
+
+init();
+</script>
+</body>
+</html>
