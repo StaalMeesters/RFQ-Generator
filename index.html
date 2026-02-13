@@ -65,6 +65,14 @@ body{font-family:'Outfit',sans-serif;background:var(--lt);color:var(--bd);min-he
 .vf input,.vf select{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-family:'Outfit',sans-serif;font-size:14px;transition:var(--tr)}
 .vf input:focus,.vf select:focus{outline:none;border-color:var(--o);box-shadow:0 0 0 3px rgba(249,72,22,.1)}
 .vf input::placeholder{color:#bbb}
+.vf.supplier-set input,.vf.supplier-set select{opacity:.35;pointer-events:none;background:#f5f5f5}
+.vf .sup-row{display:flex;align-items:center;justify-content:space-between}
+.vf .sup-toggle{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#aaa;padding:2px 0;user-select:none;transition:var(--tr)}
+.vf .sup-toggle:hover{color:var(--o)}
+.vf .sup-toggle.active{color:var(--o)}
+.vf .sup-toggle .sup-check{width:14px;height:14px;border:1.5px solid #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;transition:var(--tr)}
+.vf .sup-toggle.active .sup-check{background:var(--o);border-color:var(--o);color:#fff}
+.ptx .vs-tag{color:#64b5f6;background:rgba(100,181,246,.12);padding:1px 6px;border-radius:3px;font-style:italic;font-size:12px}
 
 .sidebar-right{background:var(--dk);color:#ddd;overflow-y:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}
 .ph{padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}
@@ -157,7 +165,8 @@ nl:{
   io:'Alleen montage', si:'Leveren & Monteren', sv:'Scope varieert ⚠',
   dT:'Aanvraag offerte', dS:'Geachte heer/mevrouw,', dI:'Graag ontvangen wij uw prijsopgave voor onderstaande werkzaamheden.',
   dC:'Wij verzoeken u uw prijsopgave per onderdeel te specificeren.', dG:'Met vriendelijke groet,',
-  dDt:'Datum', dRf:'Referentie', dPj:'Project', dSu:'Leverancier'
+  dDt:'Datum', dRf:'Referentie', dPj:'Project', dSu:'Leverancier',
+  supBtn:'Leverancier',supFull:'Door leverancier op te geven',supShort:'Lev.'
 },
 en:{
   sub:'RFQ Configurator — PG08 Erection', btnR:'↻ Reset', btnE:'⬇ Export to Word',
@@ -171,7 +180,8 @@ en:{
   io:'Install only', si:'Supply & Install', sv:'Scope varies ⚠',
   dT:'Request for Quotation', dS:'Dear Sir/Madam,', dI:'We would like to receive your quotation for the works described below.',
   dC:'Please provide your pricing per scope item.', dG:'Kind regards,',
-  dDt:'Date', dRf:'Reference', dPj:'Project', dSu:'Supplier'
+  dDt:'Date', dRf:'Reference', dPj:'Project', dSu:'Supplier',
+  supBtn:'Supplier',supFull:'To be specified by supplier',supShort:'Sup.'
 },
 de:{
   sub:'Angebotsanfrage — PG08 Montage', btnR:'↻ Zurücksetzen', btnE:'⬇ Export nach Word',
@@ -185,7 +195,8 @@ de:{
   io:'Nur Montage', si:'Liefern & Montieren', sv:'Umfang variiert ⚠',
   dT:'Angebotsanfrage', dS:'Sehr geehrte Damen und Herren,', dI:'Wir bitten um Ihr Angebot für die nachfolgend beschriebenen Leistungen.',
   dC:'Bitte geben Sie Ihre Preise je Leistungsposition an.', dG:'Mit freundlichen Grüßen,',
-  dDt:'Datum', dRf:'Referenz', dPj:'Projekt', dSu:'Lieferant'
+  dDt:'Datum', dRf:'Referenz', dPj:'Projekt', dSu:'Lieferant',
+  supBtn:'Lieferant',supFull:'Vom Lieferanten anzugeben',supShort:'Lief.'
 }};
 
 const CL = {
@@ -330,7 +341,7 @@ const TB = [
 // ═════════════════════════════
 //  STATE & HELPERS
 // ═════════════════════════════
-const S={sel:new Set(),vals:{},lang:'nl'};
+const S={sel:new Set(),vals:{},supVars:{},lang:'nl'};
 const CO=['ROOF','WALL','INTERIOR','EQUIPMENT','CONDITIONS','COMMERCIAL'];
 const t=k=>UI[S.lang]?.[k]||UI.en[k]||k;
 const L=o=>typeof o==='string'?o:(o[S.lang]||o.en||o.nl||'');
@@ -369,7 +380,7 @@ function applyUI(){
 // ═════════════════════════════
 function init(){
   document.getElementById('proj-date').value=new Date().toISOString().split('T')[0];
-  TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};});
+  TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};S.supVars[b.id]={};});
   applyUI();renderBL();renderVF();upd();updS();
 }
 
@@ -405,15 +416,27 @@ function renderVF(){
     h+=`<div class="vs"><div class="vsh"><h3>${L(b.ti)}</h3>${slab?`<span class="sb ${sc}">${slab}</span>`:''}</div><div class="vg">`;
     b.vars.forEach(v=>{
       const val=S.vals[b.id]?.[v.n]||'',us=typeof v.u==='object'?L(v.u):v.u,ll=L(v.l);
+      const isSup=S.supVars[b.id]?.[v.n]||false;
+      const supCls=isSup?'supplier-set':'';
+      const supAct=isSup?'active':'';
+      h+=`<div class="vf ${supCls}">`;
+      h+=`<label><span class="sup-row"><span>${ll} ${us?`<span class="u">(${us})</span>`:''}</span><span class="sup-toggle ${supAct}" onclick="event.preventDefault();toggleSup('${b.id}','${v.n}')" title="${t('supFull')}"><span class="sup-check">${isSup?'✓':''}</span> ${t('supBtn')}</span></span></label>`;
       if(v.t==='select'){
-        h+=`<div class="vf"><label>${ll} ${us?`<span class="u">(${us})</span>`:''}</label><select onchange="sv('${b.id}','${v.n}',this.value)"><option value="">${t('sel')}</option>${v.opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+        h+=`<select onchange="sv('${b.id}','${v.n}',this.value)" ${isSup?'disabled':''}><option value="">${t('sel')}</option>${v.opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select>`;
       }else{
-        h+=`<div class="vf"><label>${ll} ${us?`<span class="u">(${us})</span>`:''}</label><input type="text" value="${val}" placeholder="${v.ph||''}" oninput="sv('${b.id}','${v.n}',this.value)"></div>`;
+        h+=`<input type="text" value="${isSup?'':val}" placeholder="${isSup?t('supFull'):(v.ph||'')}" oninput="sv('${b.id}','${v.n}',this.value)" ${isSup?'disabled':''}>`;
       }
+      h+=`</div>`;
     });
     h+='</div></div>';
   });
   c.innerHTML=h;
+}
+function toggleSup(bid,vn){
+  if(!S.supVars[bid])S.supVars[bid]={};
+  S.supVars[bid][vn]=!S.supVars[bid][vn];
+  if(S.supVars[bid][vn]){S.vals[bid][vn]='';}
+  renderVF();upd();updS();
 }
 function sv(bid,vn,val){if(!S.vals[bid])S.vals[bid]={};S.vals[bid][vn]=val;upd();updS();}
 
@@ -428,17 +451,23 @@ function upd(){
   let h='';
   sel.forEach(b=>{
     let tx=L(b.tp);const vs=S.vals[b.id]||{};
-    tx=tx.replace(/\{(\w+)\}/g,(m,vn)=>{const val=vs[vn];if(val)return`<span class="vh">${val}</span>`;const vd=b.vars.find(v=>v.n===vn);return`<span class="ve">[${vd?L(vd.l):vn}]</span>`;});
+    tx=tx.replace(/\{(\w+)\}/g,(m,vn)=>{
+      const isSup=S.supVars[b.id]?.[vn]||false;
+      if(isSup) return`<span class="vs-tag">[${t('supFull')}]</span>`;
+      const val=vs[vn];if(val)return`<span class="vh">${val}</span>`;
+      const vd=b.vars.find(v=>v.n===vn);return`<span class="ve">[${vd?L(vd.l):vn}]</span>`;
+    });
     h+=`<div class="pbl"><div class="pbt">${b.id} — ${L(b.ti)}</div><div class="ptx">${tx}</div></div>`;
   });
   c.innerHTML=h;
 }
 function updS(){
   document.getElementById('st-b').textContent=S.sel.size+' '+t('bsel');
-  let f=0,tt=0;TB.filter(b=>S.sel.has(b.id)).forEach(b=>{b.vars.forEach(v=>{tt++;if(S.vals[b.id]?.[v.n])f++;});});
-  document.getElementById('st-v').textContent=`${f}/${tt} ${t('vfil')}`;
+  let f=0,tt=0,sp=0;
+  TB.filter(b=>S.sel.has(b.id)).forEach(b=>{b.vars.forEach(v=>{tt++;if(S.supVars[b.id]?.[v.n])sp++;else if(S.vals[b.id]?.[v.n])f++;});});
+  document.getElementById('st-v').textContent=`${f}/${tt} ${t('vfil')}` + (sp ? ` · ${sp}× ${t('supBtn')}` : '');
 }
-function resetAll(){S.sel.clear();TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};});renderBL();renderVF();upd();updS();}
+function resetAll(){S.sel.clear();TB.forEach(b=>{if(b.mand)S.sel.add(b.id);S.vals[b.id]={};S.supVars[b.id]={};});renderBL();renderVF();upd();updS();}
 
 // ═════════════════════════════
 //  WORD EXPORT (in active language)
@@ -511,7 +540,11 @@ async function exportToWord(){
 
       let txt = L(b.tp);
       const vs = S.vals[b.id] || {};
-      txt = txt.replace(/\{(\w+)\}/g, (m, vn) => vs[vn] || '[' + vn + ']');
+      const sup = S.supVars[b.id] || {};
+      txt = txt.replace(/\{(\w+)\}/g, (m, vn) => {
+        if (sup[vn]) return '[' + t('supFull') + ']';
+        return vs[vn] || '[' + vn + ']';
+      });
       txt.split('\n').forEach(line => {
         const ln = line.trim();
         if (!ln) return;
